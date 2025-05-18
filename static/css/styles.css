@@ -1,0 +1,20 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    color: rgb(0, 179, 255);
+    background-color: rgba(1, 31, 31, 0.545);
+}
+
+/* Smooth transitions for interactive elements */
+button, a {
+    transition: all 0.3s ease;
+}
+
+/* Add subtle animation for task items */
+li {
+    transition: transform 0.2s ease;
+}
+
+li:hover {
+    transform: translateY(-2px);
+    color: #000000;
+}

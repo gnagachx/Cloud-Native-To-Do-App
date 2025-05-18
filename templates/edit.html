@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Task</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6">Edit Task</h1>
+        <form action="{{ url_for('edit_task', task_id=task.id) }}" method="POST" class="mb-4">
+            <div class="flex flex-col space-y-2">
+                <label for="title" class="text-sm font-medium text-gray-700">Task Title</label>
+                <div class="flex space-x-2">
+                    <input
+                        id="title"
+                        type="text"
+                        name="title"
+                        value="{{ task.title }}"
+                        class="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        title="Edit the task title"
+                        placeholder="Enter task title"
+                    />
+                    <button
+                        type="submit"
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </form>
+        <a href="{{ url_for('index') }}" class="text-blue-500 hover:underline">Back to List</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List by charan</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-teal-100 via-blue-200 to-indigo-300 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
+        <h1 class="text-3xl font-semibold text-gray-800 text-center mb-6">To-Do List</h1>
+        
+        <!-- Task List -->
+        <ul class="space-y-3 mb-6">
+            {% if tasks %}
+                {% for task in tasks %}
+                <li class="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center space-x-3">
+                        <label class="sr-only" for="task-checkbox-{{ task.id }}">Mark task as completed</label>
+                        <input
+                            id="task-checkbox-{{ task.id }}"
+                            type="checkbox"
+                            title="Mark task as completed"
+                            {{ 'checked' if task.completed }}
+                            onclick="window.location.href='{{ url_for('toggle_task', task_id=task.id) }}'"
+                            class="h-5 w-5 text-teal-600 rounded focus:ring-teal-500"
+                        />
+                        <span class="{{ 'line-through text-gray-500' if task.completed else 'text-gray-800' }} font-medium">
+                            {{ task.title }}
+                        </span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('edit_task', task_id=task.id) }}" class="text-teal-600 hover:text-teal-800 font-medium">Edit</a>
+                        <a href="{{ url_for('delete_task_ui', task_id=task.id) }}" class="text-red-500 hover:text-red-700 font-medium">Delete</a>
+                    </div>
+                </li>
+                {% endfor %}
+            {% else %}
+                <p class="text-blue-500 text-center italic">No tasks yet. Add one below!</p>
+            {% endif %}
+        </ul>
+
+        <!-- Add Task Form -->
+        <form action="{{ url_for('add_task') }}" method="POST">
+            <div class="flex space-x-3">
+                <input
+                    type="text"
+                    name="title"
+                    placeholder="Add a new task"
+                    class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-700"
+                    required
+                />
+                <button
+                    type="submit"
+                    class="bg-teal-600 text-cyan px-5 py-3 rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                    Add Task
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
