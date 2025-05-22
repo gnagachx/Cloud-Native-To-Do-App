@@ -9,32 +9,57 @@
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
     <style>
         .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .task-hover:hover { transform: translateY(-2px); transition: transform 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .task-hover:hover { transform: translateY(-2px); transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); }
         .overdue { border-left: 4px solid #ef4444; }
+        .gradient-bg { background: linear-gradient(135deg, #031117, #010422, #30124d); }
+        a { 
+            color: #60a5fa; 
+            text-decoration: underline; 
+            cursor: pointer; 
+        }
+        a:hover { color: #d610ab; }
+        .notes-container { 
+            position: relative; 
+            z-index: 10; 
+        }
     </style>
 </head>
-<body class="bg-gray-100 font-inter">
+<body class="gradient-bg font-inter min-h-screen">
+    <!-- Debug Section -->
+   
+
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <div class="w-64 bg-indigo-200 shadow-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">To-Do App By Charan</h2>
+        <div class="w-80 bg-gray-900 text-white p-6 shadow-lg">
+            <h2 class="text-2xl font-bold mb-6">To-Do App</h2>
             <form action="{{ url_for('index') }}" method="GET" class="mb-4">
-                <label for="date-filter" class="block text-sm font-medium text-gray-700">Filter by Date</label>
+                <label for="date-filter" class="block text-sm font-medium mb-2">Filter Tasks by Date</label>
                 <input
                     type="date"
                     id="date-filter"
                     name="date"
                     value="{{ selected_date or '' }}"
                     onchange="this.form.submit()"
-                    class="mt-1 p-2 w-full border rounded-md focus:ring-2 focus:ring-indigo-500"
+                    class="p-2 w-full bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
+                />
+            </form>
+            <form action="{{ url_for('index') }}" method="GET" class="mb-4">
+                <label for="goal-date-filter" class="block text-sm font-medium mb-2">Filter Daily Goals by Date</label>
+                <input
+                    type="date"
+                    id="goal-date-filter"
+                    name="goal_date"
+                    value="{{ selected_goal_date or (now.strftime('%Y-%m-%d') if now else '') }}"
+                    onchange="this.form.submit()"
+                    class="p-2 w-full bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
                 />
             </form>
             <a
                 href="{{ url_for('index') }}"
-                class="block w-full bg-indigo-600 text-white text-center py-2 rounded-md hover:bg-indigo-700 mb-4"
+                class="block w-full bg-indigo-600 text-white text-center py-2 rounded-md hover:bg-indigo-500 transition-colors mb-4"
             >
-                Show All Tasks
+                Show All
             </a>
             <form action="{{ url_for('index') }}" method="GET">
                 <input
@@ -42,16 +67,15 @@
                     name="search"
                     placeholder="Search tasks..."
                     value="{{ search_query or '' }}"
-                    class="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500"
+                    class="w-full p-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
                 />
-                
             </form>
             <div class="mt-4">
-                <label for="sort-by" class="block text-sm font-medium text-gray-700">Sort By</label>
+                <label for="sort-by" class="block text-sm font-medium mb-2">Sort Tasks By</label>
                 <select
                     id="sort-by"
-                    onchange="window.location.href='{{ url_for('index', date=selected_date, search=search_query) }}&sort=' + this.value"
-                    class="w-full p-2 border rounded-md"
+                    onchange="window.location.href='{{ url_for('index', date=selected_date, goal_date=selected_goal_date, search=search_query) }}&sort=' + this.value"
+                    class="w-full p-2 bg-gray-800 border border-gray-700 rounded-md text-white"
                 >
                     <option value="created_date" {{ 'selected' if sort_by == 'created_date' }}>Created Date</option>
                     <option value="due_date" {{ 'selected' if sort_by == 'due_date' }}>Due Date</option>
@@ -61,18 +85,89 @@
         </div>
 
         <!-- Main Content -->
-        <div class="bg-gray-700 flex-1 p-8 overflow-auto">
-            <div class="max-w-3xl mx-auto">
-                <h1 class="text-3xl font-bold text-white mb-6">Your Tasks</h1>
+        <div class="flex-1 p-8 overflow-auto">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-4xl font-bold text-white mb-6">Your Tasks Charan</h1>
                 {% if selected_date %}
-                    <p class="text-white mb-4">Showing tasks for {{ selected_date }}</p>
+                    <p class="text-gray-300 mb-4">Showing tasks for {{ selected_date }}</p>
                 {% endif %}
 
+                <!-- Daily Goals -->
+                <div class="bg-gray-800 bg-opacity-90 p-6 rounded-xl shadow-lg mb-8 fade-in">
+                    <h3 class="text-xl font-semibold text-white mb-4">Have you done today? {% if selected_goal_date %}(for {{ selected_goal_date }}){% endif %}</h3>
+                    <div class="space-y-3">
+                        {% if goals %}
+                            {% for goal in goals %}
+                            <div class="flex items-center justify-between p-3 bg-gray-700 bg-opacity-50 rounded-lg task-hover">
+                                <div class="flex items-center space-x-4">
+                                    <input
+                                        id="goal-checkbox-{{ goal.id }}"
+                                        type="checkbox"
+                                        {{ 'checked' if goal.completed }}
+                                        {% if goal.id %}
+                                            onclick="window.location.href='{{ url_for('toggle_task', task_id=goal.id, date=selected_date, goal_date=selected_goal_date) }}'"
+                                        {% endif %}
+                                        class="h-5 w-5 text-indigo-400 rounded focus:ring-indigo-400"
+                                    />
+                                    <div>
+                                        <span class="{{ 'line-through text-gray-400' if goal.completed else 'text-white' }} font-medium">
+                                            {{ goal.title }}
+                                        </span>
+                                        {% if goal.notes %}
+                                            <p class="text-sm text-gray-300 notes-container" style="overflow-wrap: anywhere;">{{ render_notes(goal.notes) | safe }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <a href="{{ url_for('edit_task', task_id=goal.id) }}" class="text-indigo-400 hover:text-indigo-300">Edit</a>
+                                    <a href="{{ url_for('delete_task_ui', task_id=goal.id, date=selected_date, goal_date=selected_goal_date) }}" class="text-red-400 hover:text-red-300">Delete</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-gray-300">No daily goals for {{ selected_goal_date or 'today' }}. Add one below!</p>
+                        {% endif %}
+                    </div>
+                    <!-- Add Daily Goal Form -->
+                    <form action="{{ url_for('add_task') }}" method="POST" class="mt-4">
+                        <h4 class="text-lg font-semibold text-white mb-3">Add Daily Goal</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input
+                                type="text"
+                                name="title"
+                                placeholder="Goal title"
+                                class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
+                                required
+                            />
+                            <input
+                                type="date"
+                                name="created_date"
+                                value="{{ selected_goal_date or (now.strftime('%Y-%m-%d') if now else '') }}"
+                                class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
+                                required
+                            />
+                            <textarea
+                                name="notes"
+                                placeholder="Notes (e.g., [Duolingo](https://www.duolingo.com))"
+                                class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white col-span-2"
+                                rows="3"
+                            ></textarea>
+                            <input type="hidden" name="type" value="daily_goal">
+                        </div>
+                        <button
+                            type="submit"
+                            class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-500 transition-colors"
+                        >
+                            Add Daily Goal
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Task List -->
-                <div class="bg-gray-700  space-y-4" >
+                <div class="space-y-4">
                     {% if tasks %}
                         {% for task in tasks %}
-                        <div class="bg-gray-300 p-4 rounded-lg shadow-md task-hover fade-in {{ 'overdue' if task.due_date and task.due_date < now.strftime('%Y-%m-%d') and not task.completed }}">
+                        <div class="bg-gray-800 bg-opacity-90 p-4 rounded-xl shadow-md task-hover fade-in {{ 'overdue' if task.due_date and task.due_date < now.strftime('%Y-%m-%d') and not task.completed }}">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-4">
                                     <input
@@ -80,35 +175,38 @@
                                         type="checkbox"
                                         {{ 'checked' if task.completed }}
                                         {% if task.id %}
-                                            onclick="window.location.href='{{ url_for('toggle_task', task_id=task.id, date=selected_date) }}'"
+                                            onclick="window.location.href='{{ url_for('toggle_task', task_id=task.id, date=selected_date, goal_date=selected_goal_date) }}'"
                                         {% endif %}
-                                        class="h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
+                                        class="h-5 w-5 text-indigo-400 rounded focus:ring-indigo-400"
                                     />
                                     <div>
-                                        <span class="{{ 'line-through text-gray-500' if task.completed else 'text-gray-800' }} font-medium">
+                                        <span class="{{ 'line-through text-gray-400' if task.completed else 'text-white' }} font-medium">
                                             {{ task.title }}
                                         </span>
-                                        <p class="text-sm text-gray-500">
+                                        <p class="text-sm text-gray-300">
                                             Created: {{ task.created_date }} |
                                             {% if task.due_date %}
                                                 Due: {{ task.due_date }}
                                                 {% if task.due_date < now.strftime('%Y-%m-%d') and not task.completed %}
-                                                    <span class="text-red-500 font-medium">(Overdue)</span>
+                                                    <span class="text-red-400 font-medium">(Overdue)</span>
                                                 {% endif %}
                                             {% endif %}
                                             | Category: {{ task.category }}
                                         </p>
+                                        {% if task.notes %}
+                                            <p class="text-sm text-gray-300 notes-container" style="overflow-wrap: anywhere;">{{ render_notes(task.notes) | safe }}</p>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="text-indigo-600 hover:text-indigo-800">Edit</a>
-                                    <a href="{{ url_for('delete_task_ui', task_id=task.id, date=selected_date) }}" class="text-red-500 hover:text-red-700">Delete</a>
+                                    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="text-indigo-400 hover:text-indigo-300">Edit</a>
+                                    <a href="{{ url_for('delete_task_ui', task_id=task.id, date=selected_date, goal_date=selected_goal_date) }}" class="text-red-400 hover:text-red-300">Delete</a>
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
                     {% else %}
-                        <p class="text-gray-500 text-center">
+                        <p class="text-gray-300 text-center">
                             {% if selected_date %}
                                 No tasks for {{ selected_date }}. Add one below!
                             {% else %}
@@ -119,42 +217,47 @@
                 </div>
 
                 <!-- Add Task Form -->
-                <form action="{{ url_for('add_task') }}" method="POST" class="mt-8 bg-white p-6 rounded-lg shadow-md">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Add New Task</h3>
+                <form action="{{ url_for('add_task') }}" method="POST" class="mt-8 bg-gray-800 bg-opacity-90 p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-semibold text-white mb-4">Add New Task</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input
                             type="text"
                             name="title"
                             placeholder="Task title"
-                            class="p-3 border rounded-md focus:ring-2 focus:ring-indigo-500"
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
                             required
                         />
                         <input
                             type="date"
                             name="created_date"
                             value="{{ selected_date or (now.strftime('%Y-%m-%d') if now else '') }}"
-                            class="p-3 border rounded-md focus:ring-2 focus:ring-indigo-500"
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
                             required
                         />
                         <input
-                            type="text"
-                            name="Notes"
-                            placeholder="Enter notes"
-                            class="p-3 border rounded-md focus:ring-2 focus:ring-indigo-500"
+                            type="date"
+                            name="due_date"
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
                         />
                         <select
                             name="category"
-                            class="p-3 border rounded-md focus:ring-2 focus:ring-indigo-500"
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white"
                         >
                             <option value="General">General</option>
                             <option value="Work">Work</option>
                             <option value="Personal">Personal</option>
                             <option value="Urgent">Urgent</option>
                         </select>
+                        <textarea
+                            name="notes"
+                            placeholder="Notes (e.g., [Google](https://www.google.com))"
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-400 text-white col-span-2"
+                            rows="3"
+                        ></textarea>
                     </div>
                     <button
                         type="submit"
-                        class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-700 transition-colors"
+                        class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-md hover:bg-indigo-500 transition-colors"
                     >
                         Add Task
                     </button>
